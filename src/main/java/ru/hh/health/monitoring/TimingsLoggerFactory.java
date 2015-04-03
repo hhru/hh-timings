@@ -22,4 +22,8 @@ public class TimingsLoggerFactory {
   public TimingsLogger getLogger(String context, String requestId) {
     return new TimingsLogger(context, requestId, probeDelays, totalTimeThreshold);
   }
+
+  public long getTotalTimeThreshold() {
+    return totalTimeThreshold;
+  }
 }
