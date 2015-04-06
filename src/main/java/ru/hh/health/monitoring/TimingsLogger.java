@@ -11,6 +11,7 @@ import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 import ru.hh.util.LogLevel;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -24,16 +25,23 @@ public class TimingsLogger {
   private final String timingsContext;
   private final String requestId;
   private final List<LogRecord> logRecords = newArrayList();
-
+  private final LogOutputPrototype[] prototypes;
+  
   private volatile int timedAreasCount;
   private volatile boolean errorState;
   private volatile long startTime;
+  
 
   public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays, long totalTimeThreshold) {
+    this(context, requestId, probeDelays, totalTimeThreshold, LogOutputPrototype.MULTIPLE_STRING);
+  }
+  
+  public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays, long totalTimeThreshold, LogOutputPrototype... prototypes) {
     this.timingsContext = context;
     this.requestId = requestId;
     this.probeDelays = probeDelays;
     this.totalTimeThreshold = totalTimeThreshold;
+    this.prototypes = prototypes;
   }
 
   public synchronized void enterTimedArea() {
@@ -66,12 +74,10 @@ public class TimingsLogger {
     }
   }
 
-  private String probeMessage(long startOffset, long took, String name, int cols) {
-    return String
-             .format("  elapsed(ms): %" + cols + "d %-" + (cols + 1) + "s %s", startOffset, String.format("+%d", took),
-                     name);
+  private String probeMessage(long elapsed, String name) {
+    return MessageFormatter.arrayFormat("'{}'=+{}", new Object[]{name, elapsed}).getMessage();
   }
-
+  
   private void outputLoggedTimings() {
     final long endTime = DateTimeUtils.currentTimeMillis();
     long timeSpent = endTime - startTime;
@@ -86,7 +92,7 @@ public class TimingsLogger {
       if(StringUtils.isNotBlank(timingsContext)) {
         totalTimeBuilder.append("Context : ").append(timingsContext).append(" ; ");
       }
-      if(exceeded) {
+      if(exceeded && totalTimeThreshold > 0) {
         totalTimeBuilder.append(totalTimeThreshold);
         totalTimeBuilder.append("ms tolerance exceeded, ");
       }
@@ -98,22 +104,22 @@ public class TimingsLogger {
         LOG.debug(totalTimeMessage);
         return;
       }
-      LogLevel.Level logLevel = errorState ? LogLevel.Level.ERROR : LogLevel.Level.WARN;
-      LogLevel.log(LOG, logLevel, totalTimeMessage);
-
+      
+      LogOutput[] outputs = LogOutput.make(
+          LOG, 
+          errorState ? LogLevel.Level.ERROR : LogLevel.Level.WARN, 
+          timingsContext, 
+          prototypes
+      );
+      LogOutput.collect(totalTimeMessage, outputs);
       final int totalRecords = logRecords.size();
-      int maxCols = 0;
-      if(totalRecords > 0) {
-        maxCols = Long.toString(endTime - startTime).length();
-      }
       for(int idx = 0; idx < totalRecords; idx++) {
         long timestamp = logRecords.get(idx).timestamp;
-        long startOffset = timestamp - startTime;
         long nextTimestamp = (idx + 1 == totalRecords) ? endTime : logRecords.get(idx + 1).timestamp;
         long took = nextTimestamp - timestamp;
-
-        LogLevel.log(LOG, logLevel, probeMessage(startOffset, took, logRecords.get(idx).message, maxCols));
+        LogOutput.collect(probeMessage(took, logRecords.get(idx).message), outputs);
       }
+      LogOutput.dump(outputs);
     } finally {
       lc.leave();
     }

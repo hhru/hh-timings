@@ -11,16 +11,22 @@ public class TimingsLoggerFactory {
   // Event -> Delay
   private final Map<String, Long> probeDelays;
   private final long totalTimeThreshold;
+  private final LogOutputPrototype[] prototypes;
 
-  public TimingsLoggerFactory(Map<String, Long> probeDelays, Optional<Long> totalTimeThreshold) {
+  public TimingsLoggerFactory(Map<String, Long> probeDelays, Optional<Long> totalTimeThreshold, LogOutputPrototype... prototypes) {
+    this.prototypes = prototypes;
     this.probeDelays = probeDelays;
     this.totalTimeThreshold = (totalTimeThreshold.isPresent())
         ? totalTimeThreshold.get()
         : DEFAULT_TIME_TOLERANCE;
   }
 
+  public TimingsLoggerFactory(Map<String, Long> probeDelays, Optional<Long> totalTimeThreshold) {
+    this(probeDelays, totalTimeThreshold, LogOutputPrototype.MULTIPLE_STRING);
+  }
+
   public TimingsLogger getLogger(String context, String requestId) {
-    return new TimingsLogger(context, requestId, probeDelays, totalTimeThreshold);
+    return new TimingsLogger(context, requestId, probeDelays, totalTimeThreshold, prototypes);
   }
 
   public long getTotalTimeThreshold() {
