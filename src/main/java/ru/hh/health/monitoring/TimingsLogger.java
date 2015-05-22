@@ -19,29 +19,22 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public class TimingsLogger {
   private final static Logger LOG = LoggerFactory.getLogger(TimingsLogger.class);
+  public static final String RECORDS_SPLITTER = " ; ";
 
   private final Map<String, Long> probeDelays;
-  private final long totalTimeThreshold;
   private final String timingsContext;
   private final String requestId;
   private final List<LogRecord> logRecords = newArrayList();
-  private final LogOutputPrototype[] prototypes;
-  
+
   private volatile int timedAreasCount;
   private volatile boolean errorState;
   private volatile long startTime;
   
 
-  public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays, long totalTimeThreshold) {
-    this(context, requestId, probeDelays, totalTimeThreshold, LogOutputPrototype.MULTIPLE_STRING);
-  }
-  
-  public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays, long totalTimeThreshold, LogOutputPrototype... prototypes) {
+  public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays) {
     this.timingsContext = context;
     this.requestId = requestId;
     this.probeDelays = probeDelays;
-    this.totalTimeThreshold = totalTimeThreshold;
-    this.prototypes = prototypes;
   }
 
   public synchronized void enterTimedArea() {
@@ -64,6 +57,11 @@ public class TimingsLogger {
     errorState = true;
   }
 
+
+  public synchronized void mark() {
+    probe(null);
+  }
+
   public synchronized void probe(String event) {
     Long delay = probeDelays.get(event);
     if(delay == null) {
@@ -81,45 +79,25 @@ public class TimingsLogger {
   private void outputLoggedTimings() {
     final long endTime = DateTimeUtils.currentTimeMillis();
     long timeSpent = endTime - startTime;
-
+    StringBuilder logMessageBuilder = new StringBuilder();
     LoggingContext lc = LoggingContext.enter(requestId);
-    try { // leave LoggincContext in finally
-
-      final boolean exceeded = timeSpent > totalTimeThreshold;
-      final boolean logProbes = errorState || exceeded;
-
-      StringBuilder totalTimeBuilder = new StringBuilder();
+    try {
       if(StringUtils.isNotBlank(timingsContext)) {
-        totalTimeBuilder.append("Context : ").append(timingsContext).append(" ; ");
+        logMessageBuilder.append("Context : ").append(timingsContext).append(RECORDS_SPLITTER);
       }
-      if(exceeded && totalTimeThreshold > 0) {
-        totalTimeBuilder.append(totalTimeThreshold);
-        totalTimeBuilder.append("ms tolerance exceeded, ");
+      logMessageBuilder.append("total time ");
+      logMessageBuilder.append(timeSpent);
+      logMessageBuilder.append(" ms").append(RECORDS_SPLITTER);
+
+      long prevTimestamp = startTime;
+      for (LogRecord logRecord : logRecords) {
+        if (!logRecord.isEmpty()) {
+          logMessageBuilder.append(probeMessage(logRecord.timestamp - prevTimestamp, logRecord.message))
+              .append(RECORDS_SPLITTER);
+        }
+        prevTimestamp = logRecord.timestamp;
       }
-      totalTimeBuilder.append("total time ");
-      totalTimeBuilder.append(timeSpent);
-      totalTimeBuilder.append(" ms");
-      final String totalTimeMessage = totalTimeBuilder.toString();
-      if(!logProbes) {
-        LOG.debug(totalTimeMessage);
-        return;
-      }
-      
-      LogOutput[] outputs = LogOutput.make(
-          LOG, 
-          errorState ? LogLevel.Level.ERROR : LogLevel.Level.WARN, 
-          timingsContext, 
-          prototypes
-      );
-      LogOutput.collect(totalTimeMessage, outputs);
-      final int totalRecords = logRecords.size();
-      for(int idx = 0; idx < totalRecords; idx++) {
-        long timestamp = logRecords.get(idx).timestamp;
-        long nextTimestamp = (idx + 1 == totalRecords) ? endTime : logRecords.get(idx + 1).timestamp;
-        long took = nextTimestamp - timestamp;
-        LogOutput.collect(probeMessage(took, logRecords.get(idx).message), outputs);
-      }
-      LogOutput.dump(outputs);
+      LogLevel.log(LOG, errorState ? LogLevel.Level.ERROR : LogLevel.Level.INFO, logMessageBuilder.toString());
     } finally {
       lc.leave();
     }
@@ -146,6 +124,10 @@ public class TimingsLogger {
     private LogRecord(String message, Long timestamp) {
       this.message = message;
       this.timestamp = timestamp;
+    }
+    
+    public boolean isEmpty() {
+      return message == null || message.isEmpty();      
     }
   }
 }
