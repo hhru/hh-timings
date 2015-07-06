@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import ru.hh.util.LogLevel;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
@@ -29,7 +30,8 @@ public class TimingsLogger {
   private volatile int timedAreasCount;
   private volatile boolean errorState;
   private volatile long startTime;
-  
+  @Nullable
+  private volatile String responseContext;
 
   public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays) {
     this.timingsContext = context;
@@ -57,7 +59,6 @@ public class TimingsLogger {
     errorState = true;
   }
 
-
   public synchronized void mark() {
     probe(null);
   }
@@ -72,6 +73,10 @@ public class TimingsLogger {
     }
   }
 
+  public void setResponseContext(String responseContext) {
+    this.responseContext = responseContext;
+  }
+
   private String probeMessage(long elapsed, String name) {
     return MessageFormatter.arrayFormat("'{}'=+{}", new Object[]{name, elapsed}).getMessage();
   }
@@ -82,6 +87,8 @@ public class TimingsLogger {
     StringBuilder logMessageBuilder = new StringBuilder();
     LoggingContext lc = LoggingContext.enter(requestId);
     try {
+      logMessageBuilder.append("response: ").append(responseContext).append(RECORDS_SPLITTER);
+
       if(StringUtils.isNotBlank(timingsContext)) {
         logMessageBuilder.append("Context : ").append(timingsContext).append(RECORDS_SPLITTER);
       }
