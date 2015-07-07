@@ -18,8 +18,8 @@ import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
 public class TimingsLogger {
-  private final static Logger LOG = LoggerFactory.getLogger(TimingsLogger.class);
-  public static final String RECORDS_SPLITTER = "; ";
+  private static final Logger LOG = LoggerFactory.getLogger(TimingsLogger.class);
+  private static final String RECORDS_SPLITTER = "; ";
 
   private final Map<String, Long> probeDelays;
   private final String timingsContext;
@@ -76,7 +76,7 @@ public class TimingsLogger {
     this.responseContext = responseContext;
   }
 
-  private String probeMessage(long elapsed, String name) {
+  private static String probeMessage(long elapsed, String name) {
     return MessageFormatter.arrayFormat("{}=+{}", new Object[]{name, elapsed}).getMessage();
   }
   
@@ -125,7 +125,7 @@ public class TimingsLogger {
     public final Long timestamp;
     public final String message;
 
-    private LogRecord(String message, Long timestamp) {
+    LogRecord(String message, Long timestamp) {
       this.message = message;
       this.timestamp = timestamp;
     }
