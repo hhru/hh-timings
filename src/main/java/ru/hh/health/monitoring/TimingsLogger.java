@@ -7,7 +7,6 @@ import static java.lang.String.format;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public class TimingsLogger {
   private final static Logger LOG = LoggerFactory.getLogger(TimingsLogger.class);
-  public static final String RECORDS_SPLITTER = " ; ";
+  public static final String RECORDS_SPLITTER = "; ";
 
   private final Map<String, Long> probeDelays;
   private final String timingsContext;
@@ -78,7 +77,7 @@ public class TimingsLogger {
   }
 
   private String probeMessage(long elapsed, String name) {
-    return MessageFormatter.arrayFormat("'{}'=+{}", new Object[]{name, elapsed}).getMessage();
+    return MessageFormatter.arrayFormat("{}=+{}", new Object[]{name, elapsed}).getMessage();
   }
   
   private void outputLoggedTimings() {
@@ -88,10 +87,8 @@ public class TimingsLogger {
     LoggingContext lc = LoggingContext.enter(requestId);
     try {
       logMessageBuilder.append("response: ").append(responseContext).append(RECORDS_SPLITTER);
+      logMessageBuilder.append("context: ").append(timingsContext).append(RECORDS_SPLITTER);
 
-      if(StringUtils.isNotBlank(timingsContext)) {
-        logMessageBuilder.append("Context : ").append(timingsContext).append(RECORDS_SPLITTER);
-      }
       logMessageBuilder.append("total time ");
       logMessageBuilder.append(timeSpent);
       logMessageBuilder.append(" ms").append(RECORDS_SPLITTER);
