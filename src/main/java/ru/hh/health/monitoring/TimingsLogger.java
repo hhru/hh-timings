@@ -7,19 +7,19 @@ import static java.lang.String.format;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import ru.hh.util.LogLevel;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
 public class TimingsLogger {
-  private final static Logger LOG = LoggerFactory.getLogger(TimingsLogger.class);
-  public static final String RECORDS_SPLITTER = " ; ";
+  private static final Logger LOG = LoggerFactory.getLogger(TimingsLogger.class);
+  private static final String RECORDS_SPLITTER = "; ";
 
   private final Map<String, Long> probeDelays;
   private final String timingsContext;
@@ -29,7 +29,8 @@ public class TimingsLogger {
   private volatile int timedAreasCount;
   private volatile boolean errorState;
   private volatile long startTime;
-  
+  @Nullable
+  private volatile String responseContext;
 
   public TimingsLogger(String context, String requestId, Map<String, Long> probeDelays) {
     this.timingsContext = context;
@@ -57,7 +58,6 @@ public class TimingsLogger {
     errorState = true;
   }
 
-
   public synchronized void mark() {
     probe(null);
   }
@@ -72,8 +72,12 @@ public class TimingsLogger {
     }
   }
 
-  private String probeMessage(long elapsed, String name) {
-    return MessageFormatter.arrayFormat("'{}'=+{}", new Object[]{name, elapsed}).getMessage();
+  public void setResponseContext(String responseContext) {
+    this.responseContext = responseContext;
+  }
+
+  private static String probeMessage(long elapsed, String name) {
+    return MessageFormatter.arrayFormat("{}=+{}", new Object[]{name, elapsed}).getMessage();
   }
   
   private void outputLoggedTimings() {
@@ -82,9 +86,9 @@ public class TimingsLogger {
     StringBuilder logMessageBuilder = new StringBuilder();
     LoggingContext lc = LoggingContext.enter(requestId);
     try {
-      if(StringUtils.isNotBlank(timingsContext)) {
-        logMessageBuilder.append("Context : ").append(timingsContext).append(RECORDS_SPLITTER);
-      }
+      logMessageBuilder.append("response: ").append(responseContext).append(RECORDS_SPLITTER);
+      logMessageBuilder.append("context: ").append(timingsContext).append(RECORDS_SPLITTER);
+
       logMessageBuilder.append("total time ");
       logMessageBuilder.append(timeSpent);
       logMessageBuilder.append(" ms").append(RECORDS_SPLITTER);
@@ -121,7 +125,7 @@ public class TimingsLogger {
     public final Long timestamp;
     public final String message;
 
-    private LogRecord(String message, Long timestamp) {
+    LogRecord(String message, Long timestamp) {
       this.message = message;
       this.timestamp = timestamp;
     }
