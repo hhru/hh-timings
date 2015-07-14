@@ -9,7 +9,7 @@
 
   <groupId>ru.hh</groupId>
   <artifactId>timings</artifactId>
-  <version>1.4</version>
+  <version>1.5-SNAPSHOT</version>
 
   <name>Stopwatch logging</name>
   <packaging>jar</packaging>
