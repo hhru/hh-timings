@@ -9,7 +9,7 @@
 
   <groupId>ru.hh</groupId>
   <artifactId>timings</artifactId>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.6</version>
 
   <name>Stopwatch logging</name>
   <packaging>jar</packaging>
@@ -89,6 +89,6 @@
   <scm>
     <connection>scm:git:git@github.com:hhru/hh-timings.git</connection>
     <developerConnection>scm:git:git@github.com:hhru/hh-timings.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>timings-1.6</tag>
   </scm>
 </project>
