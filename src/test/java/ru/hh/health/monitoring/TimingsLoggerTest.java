@@ -1,6 +1,5 @@
 package ru.hh.health.monitoring;
 
-import com.google.common.collect.ImmutableMap;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -9,6 +8,7 @@ import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
 
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.inOrder;
@@ -20,7 +20,7 @@ public class TimingsLoggerTest {
   @Test
   public void testNoError() throws Exception {
     Logger logger = mock(Logger.class);
-    TimingsLoggerFactory timingsLoggerFactory = new TimingsLoggerFactory(ImmutableMap.<String, Long>of());
+    TimingsLoggerFactory timingsLoggerFactory = new TimingsLoggerFactory(Collections.<String, Long>emptyMap());
     TimingsLogger timingsLogger = timingsLoggerFactory.getLogger("context", "requestId");
     setFinalStaticField(TimingsLogger.class, "LOG", logger);
 
@@ -34,7 +34,7 @@ public class TimingsLoggerTest {
   @Test
   public void testError() throws Exception {
     Logger logger = mock(Logger.class);
-    TimingsLoggerFactory timingsLoggerFactory = new TimingsLoggerFactory(ImmutableMap.<String, Long>of());
+    TimingsLoggerFactory timingsLoggerFactory = new TimingsLoggerFactory(Collections.<String, Long>emptyMap());
     TimingsLogger timingsLogger = timingsLoggerFactory.getLogger("context", "requestId");
     setFinalStaticField(TimingsLogger.class, "LOG", logger);
 

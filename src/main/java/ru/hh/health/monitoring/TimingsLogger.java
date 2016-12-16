@@ -1,9 +1,8 @@
 package ru.hh.health.monitoring;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +23,7 @@ public class TimingsLogger {
   private final Map<String, Long> probeDelays;
   private final String timingsContext;
   private final String requestId;
-  private final List<LogRecord> logRecords = newArrayList();
+  private final List<LogRecord> logRecords = new ArrayList<>();
 
   private volatile int timedAreasCount;
   private volatile boolean errorState;
@@ -45,7 +44,9 @@ public class TimingsLogger {
   }
 
   public synchronized void leaveTimedArea() {
-    checkState(timedAreasCount >= 1);
+    if (timedAreasCount < 1) {
+      throw new IllegalStateException();
+    }
     timedAreasCount--;
     if(timedAreasCount == 0)
       outputLoggedTimings();
