@@ -3,7 +3,7 @@ package ru.hh.health.monitoring;
 import org.slf4j.MDC;
 
 public final class LoggingContext {
-  private final static String REQ_H_X_REQUEST_ID = "req.h.x-request-id";
+  private final static String REQ_H_X_REQUEST_ID = "request_id";
   private String backup;
   private String requestId;
   private Boolean replaced;
