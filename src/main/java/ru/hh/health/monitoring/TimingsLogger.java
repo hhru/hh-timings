@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
@@ -39,7 +38,7 @@ public class TimingsLogger {
 
   public synchronized void enterTimedArea() {
     if(startTime == 0)
-      startTime = DateTimeUtils.currentTimeMillis();
+      startTime = System.currentTimeMillis();
     timedAreasCount++;
   }
 
@@ -82,7 +81,7 @@ public class TimingsLogger {
   }
   
   private void outputLoggedTimings() {
-    final long endTime = DateTimeUtils.currentTimeMillis();
+    final long endTime = System.currentTimeMillis();
     long timeSpent = endTime - startTime;
     StringBuilder logMessageBuilder = new StringBuilder();
     LoggingContext lc = LoggingContext.enter(requestId);
@@ -109,7 +108,7 @@ public class TimingsLogger {
   }
 
   private void addLogRecord(String message) {
-    LogRecord logRecord = new LogRecord(message, DateTimeUtils.currentTimeMillis());
+    LogRecord logRecord = new LogRecord(message, System.currentTimeMillis());
     logRecords.add(logRecord);
   }
 
