@@ -2,8 +2,8 @@ package ru.hh.health.monitoring;
 
 import org.slf4j.MDC;
 
-public final class LoggingContext {
-  private final static String REQ_H_X_REQUEST_ID = "request_id";
+public final class LoggingContext implements AutoCloseable {
+  private static final String REQ_H_X_REQUEST_ID = "request_id";
   private String backup;
   private String requestId;
   private Boolean replaced;
@@ -21,16 +21,18 @@ public final class LoggingContext {
   }
 
   public void enter() {
-    if (replaced != null)
+    if (replaced != null) {
       throw new IllegalStateException("do not call this method twice or after leave");
+    }
     String old = MDC.get(REQ_H_X_REQUEST_ID);
     if (old == requestId || (old != null && old.equals(requestId))) {
       replaced = Boolean.FALSE;
     } else {
-      if (requestId != null)
+      if (requestId != null) {
         MDC.put(REQ_H_X_REQUEST_ID, requestId);
-      else
+      } else {
         MDC.remove(REQ_H_X_REQUEST_ID);
+      }
       backup = old;
       replaced = Boolean.TRUE;
     }
@@ -42,14 +44,21 @@ public final class LoggingContext {
   }
 
   public void leave() {
-    if (replaced == null)
+    if (replaced == null) {
       throw new IllegalStateException("do not call this method twice or before enter");
+    }
     if (replaced) {
-      if (backup != null)
+      if (backup != null) {
         MDC.put(REQ_H_X_REQUEST_ID, backup);
-      else
+      } else {
         MDC.remove(REQ_H_X_REQUEST_ID);
+      }
     }
     replaced = null;
+  }
+
+  @Override
+  public void close() {
+    leave();
   }
 }
